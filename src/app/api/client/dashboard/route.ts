@@ -29,6 +29,9 @@ export async function GET(req: Request) {
                 tickets: {
                     orderBy: { createdAt: "desc" },
                     take: 2
+                },
+                ontDevices: {
+                    take: 1
                 }
             }
         });
@@ -79,6 +82,7 @@ export async function GET(req: Request) {
                 price: customerInfo.plan.price
             },
             network: liveStatus,
+            device: customerInfo.ontDevices?.[0] || null,
             wifiPassword: wifiSecret,
             recentInvoices: customerInfo.invoices,
             recentTickets: customerInfo.tickets

@@ -45,6 +45,20 @@ export class MikrotikService {
         }
     }
 
+    // NMS: Monitor Traffic on an interface
+    async getTrafficMonitor(interfaceName: string) {
+        if (!this.isConnected) await this.connect();
+        try {
+            return await this.conn.write("/interface/monitor-traffic", [
+                "=.id=" + interfaceName,
+                "=once="
+            ]);
+        } catch (error) {
+            console.error(`[MikroTik] traffic monitor error for ${interfaceName}:`, error);
+            return [];
+        }
+    }
+
     // NMS: Check Router Interfaces Traffic
     async getInterfaces() {
         if (!this.isConnected) await this.connect();

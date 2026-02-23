@@ -1,19 +1,63 @@
 "use client";
 
-import { useState } from "react";
-import { Copy, Link2, CreditCard, RefreshCw, KeyRound, ExternalLink, CheckCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Copy, Link2, CreditCard, RefreshCw, KeyRound, ExternalLink, CheckCircle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function MootaSettingsPage() {
     const [copied, setCopied] = useState(false);
-    const [apiKey, setApiKey] = useState("moota_test_48a9b21f_865c");
-    const webhookUrl = "https://your-domain.com/api/webhooks/moota";
+    const [apiKey, setApiKey] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const webhookUrl = typeof window !== "undefined" ? `${window.location.protocol}//${window.location.host}/api/webhooks/moota` : "";
+
+    useEffect(() => {
+        fetchSettings();
+    }, []);
+
+    const fetchSettings = async () => {
+        try {
+            const res = await fetch("/api/settings");
+            if (res.ok) {
+                const data = await res.json();
+                setApiKey(data.mootaSecret || "");
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const res = await fetch("/api/settings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mootaSecret: apiKey })
+            });
+            if (res.ok) {
+                alert("Moota settings saved successfully.");
+            } else {
+                alert("Failed to save settings.");
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const handleCopy = () => {
         navigator.clipboard.writeText(webhookUrl);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    if (loading) {
+        return <div className="flex-1 flex items-center justify-center h-full"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    }
 
     return (
         <div className="p-8 max-w-4xl mx-auto space-y-8 h-full flex flex-col">
@@ -102,8 +146,13 @@ export default function MootaSettingsPage() {
                             />
                         </div>
 
-                        <button className="w-full py-3 bg-foreground text-background hover:bg-foreground/90 font-medium rounded-xl transition-all shadow-lg mt-auto flex items-center justify-center gap-2">
-                            <RefreshCw className="w-4 h-4" /> Save Configuration
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="w-full py-3 bg-foreground text-background hover:bg-foreground/90 font-medium rounded-xl transition-all shadow-lg mt-auto flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                            {saving ? "Saving..." : "Save Configuration"}
                         </button>
                     </div>
 

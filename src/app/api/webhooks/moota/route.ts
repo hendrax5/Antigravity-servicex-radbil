@@ -31,13 +31,17 @@ export async function POST(req: Request) {
                             customer: {
                                 include: {
                                     plan: true,
-                                    tenant: { include: { routers: true } }
+                                    tenant: true
                                 }
                             }
                         }
                     });
 
                     if (matchingInvoice) {
+                        // Optional: Verify signature if provided in headers
+                        // const signature = req.headers.get("x-moota-signature");
+                        // if (matchingInvoice.customer.tenant.mootaSecret && signature) { ... verify ... }
+
                         // Mark Invoice as PAID
                         await prisma.invoice.update({
                             where: { id: matchingInvoice.id },
@@ -55,7 +59,10 @@ export async function POST(req: Request) {
                             });
 
                             // Attempt to un-suspend them in MikroTik
-                            const defaultRouter = matchingInvoice.customer.tenant?.routers?.[0];
+                            const defaultRouter = await prisma.router.findFirst({
+                                where: { tenantId: matchingInvoice.customer.tenantId }
+                            });
+
                             if (defaultRouter) {
                                 try {
                                     const mk = new MikrotikService(defaultRouter.ipAddress, defaultRouter.username, defaultRouter.password, defaultRouter.apiPort);

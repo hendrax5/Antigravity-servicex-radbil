@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Router, Wifi, Terminal, RefreshCw, Power, AlertTriangle, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface OntDeviceType {
     id: string;
@@ -33,9 +33,50 @@ export default function AcsManagementPage() {
     const [formData, setFormData] = useState({ serialNumber: "", macAddress: "", model: "ZTE F609", customerId: "" });
     const [saving, setSaving] = useState(false);
 
+    // ACS Settings State
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const [acsConfig, setAcsConfig] = useState({ acsUrl: "", acsAuthToken: "" });
+    const [savingSettings, setSavingSettings] = useState(false);
+
     useEffect(() => {
         fetchData();
+        fetchSettings();
     }, []);
+
+    const fetchSettings = async () => {
+        try {
+            const res = await fetch("/api/settings");
+            if (res.ok) {
+                const data = await res.json();
+                setAcsConfig({
+                    acsUrl: data.acsUrl || "",
+                    acsAuthToken: data.acsAuthToken || ""
+                });
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleSaveSettings = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingSettings(true);
+        try {
+            const res = await fetch("/api/settings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(acsConfig),
+            });
+            if (res.ok) {
+                setIsSettingsModalOpen(false);
+                alert("ACS settings saved.");
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setSavingSettings(false);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -100,6 +141,9 @@ export default function AcsManagementPage() {
                     <p className="text-muted-foreground mt-1 text-sm">Provision, reboot, and monitor customer ONTs remotely via Auto Configuration Server (GenieACS).</p>
                 </div>
                 <div className="flex gap-3">
+                    <button onClick={() => setIsSettingsModalOpen(true)} className="bg-background border border-border hover:bg-muted text-foreground px-4 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-sm">
+                        <Terminal className="w-4 h-4" /> Configure ACS
+                    </button>
                     <button onClick={fetchData} className="bg-background border border-border hover:bg-muted text-foreground px-4 py-2.5 rounded-xl font-medium flex items-center gap-2 transition-all shadow-sm">
                         <RefreshCw className="w-4 h-4" /> Sync ACS
                     </button>
@@ -247,6 +291,44 @@ export default function AcsManagementPage() {
                     </motion.div>
                 </div>
             )}
+
+            {/* ACS Settings Modal */}
+            <AnimatePresence>
+                {isSettingsModalOpen && (
+                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="w-full max-w-md bg-card border border-border rounded-3xl p-6 shadow-2xl"
+                        >
+                            <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                                <Terminal className="w-5 h-5 text-primary" /> ACS Server Settings
+                            </h2>
+                            <p className="text-sm text-muted-foreground mb-6">Configure the endpoint and authentication for your GenieACS or TR-069 server.</p>
+
+                            <form className="space-y-4" onSubmit={handleSaveSettings}>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">GenieACS API URL</label>
+                                    <input type="url" value={acsConfig.acsUrl} onChange={(e) => setAcsConfig({ ...acsConfig, acsUrl: e.target.value })} className="w-full px-4 py-2 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none" required placeholder="http://103.1.2.3:7557" />
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">API Auth Token / Secret</label>
+                                    <input type="password" value={acsConfig.acsAuthToken} onChange={(e) => setAcsConfig({ ...acsConfig, acsAuthToken: e.target.value })} className="w-full px-4 py-2 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none" placeholder="Optional security token" />
+                                </div>
+
+                                <div className="flex gap-3 justify-end pt-4">
+                                    <button type="button" onClick={() => setIsSettingsModalOpen(false)} className="px-4 py-2 hover:bg-muted rounded-lg font-medium transition-colors">Cancel</button>
+                                    <button disabled={savingSettings} type="submit" className="px-5 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-medium flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50">
+                                        {savingSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
