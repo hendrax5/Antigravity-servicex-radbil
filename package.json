@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "prisma": {
-    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -27,8 +27,7 @@
     "recharts": "^3.7.0",
     "source-map-support": "^0.5.21",
     "ssh2": "^1.17.0",
-    "tailwind-merge": "^3.5.0",
-    "ts-node": "^10.9.2"
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -41,6 +40,7 @@
     "eslint-config-next": "16.1.6",
     "prisma": "^5.22.0",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }
