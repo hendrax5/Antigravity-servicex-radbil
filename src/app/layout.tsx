@@ -1,10 +1,9 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Providers } from "./providers";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+// Replaced Google Fonts with system fallback for offline-safe production builds
+const inter = { variable: "--font-sans" };
 
 export const metadata: Metadata = {
   title: "ServiceX Radbil",
