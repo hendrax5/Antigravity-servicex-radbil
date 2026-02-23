@@ -139,8 +139,8 @@ export default function PlansPage() {
 
                             <h3 className="text-xl font-bold truncate mb-1">{plan.name}</h3>
                             <div className="flex items-baseline gap-1 mb-6">
-                                <span className="text-2xl font-black">${plan.price}</span>
-                                <span className="text-muted-foreground text-sm font-medium">/ {plan.validity} days</span>
+                                <span className="text-2xl font-black">Rp {Number(plan.price).toLocaleString("id-ID")}</span>
+                                <span className="text-muted-foreground text-sm font-medium">/ {plan.validity} hari</span>
                             </div>
 
                             <div className="space-y-3 flex-grow bg-muted/30 -mx-6 -mb-6 p-6 border-t border-border mt-auto">
@@ -195,8 +195,8 @@ export default function PlansPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium mb-1 block">Price ($)</label>
-                                    <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} className="w-full px-4 py-2 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none" required placeholder="0.00" />
+                                    <label className="text-sm font-medium mb-1 block">Harga (Rp)</label>
+                                    <input type="number" step="1" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} className="w-full px-4 py-2 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary/50 outline-none" required placeholder="0" />
                                 </div>
                             </div>
 
