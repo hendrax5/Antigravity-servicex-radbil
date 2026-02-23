@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id               String            @id @default(cuid())
+  name             String
+  domain           String?           @unique
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  customers        Customer[]
+  ontDevices       OntDevice[]
+  pops             Pop[]
+  resellers        Reseller[]
+  routers          Router[]
+  salesCommissions SalesCommission[]
+  plans            ServicePlan[]
+  tickets          Ticket[]
+  users            User[]
+}
+
+model User {
+  id                    String            @id @default(cuid())
+  email                 String            @unique
+  password              String
+  name                  String
+  role                  String            @default("ADMIN")
+  tenantId              String
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  registeredCustomers   Customer[]        @relation("RegisteredCustomers")
+  assignedInstallations Customer[]        @relation("AssignedInstallations")
+  earnedCommissions     SalesCommission[] @relation("EarnedCommissions")
+  assignedTickets       Ticket[]          @relation("AssignedTickets")
+  tenant                Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Router {
+  id        String   @id @default(cuid())
+  name      String
+  ipAddress String
+  username  String
+  password  String
+  apiPort   Int      @default(8728)
+  vpnIp     String?
+  status    String   @default("OFFLINE")
+  tenantId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model ServicePlan {
+  id        String     @id @default(cuid())
+  name      String
+  price     Decimal    @db.Decimal(10, 2)
+  type      String     @default("HOTSPOT")
+  bandwidth String
+  validity  Int
+  tenantId  String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  customers Customer[]
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Pop {
+  id          String   @id @default(cuid())
+  name        String
+  location    String?
+  coordinates String?
+  tenantId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  odps        Odp[]
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Odp {
+  id          String     @id @default(cuid())
+  name        String
+  portCount   Int        @default(8)
+  location    String?
+  coordinates String?
+  popId       String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  customers   Customer[]
+  pop         Pop        @relation(fields: [popId], references: [id], onDelete: Cascade)
+}
+
+model Reseller {
+  id        String     @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  balance   Decimal    @default(0) @db.Decimal(10, 2)
+  tenantId  String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  customers Customer[]
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model OntDevice {
+  id           String    @id @default(cuid())
+  serialNumber String    @unique
+  macAddress   String?
+  model        String?
+  firmware     String?
+  status       String    @default("OFFLINE")
+  lastInform   DateTime?
+  customerId   String?   @unique
+  tenantId     String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  customer     Customer? @relation(fields: [customerId], references: [id])
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Ticket {
+  id           String          @id @default(cuid())
+  subject      String
+  status       String          @default("OPEN")
+  priority     String          @default("NORMAL")
+  customerId   String
+  tenantId     String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  assignedToId String?
+  assignedTo   User?           @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  customer     Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  messages     TicketMessage[]
+}
+
+model TicketMessage {
+  id         String   @id @default(cuid())
+  message    String
+  ticketId   String
+  senderType String
+  senderId   String
+  createdAt  DateTime @default(now())
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id            String            @id @default(cuid())
+  username      String            @unique
+  password      String
+  name          String
+  phone         String?
+  type          String            @default("HOTSPOT")
+  status        String            @default("PENDING_INSTALL")
+  planId        String
+  tenantId      String
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  odpId         String?
+  resellerId    String?
+  salespersonId String?
+  technicianId  String?
+  odp           Odp?              @relation(fields: [odpId], references: [id])
+  plan          ServicePlan       @relation(fields: [planId], references: [id])
+  reseller      Reseller?         @relation(fields: [resellerId], references: [id])
+  salesperson   User?             @relation("RegisteredCustomers", fields: [salespersonId], references: [id])
+  technician    User?             @relation("AssignedInstallations", fields: [technicianId], references: [id])
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices      Invoice[]
+  ontDevice     OntDevice?
+  commissions   SalesCommission[]
+  tickets       Ticket[]
+}
+
+model Invoice {
+  id         String    @id @default(cuid())
+  amount     Decimal   @db.Decimal(10, 2)
+  status     String    @default("UNPAID")
+  dueDate    DateTime
+  paidAt     DateTime?
+  customerId String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model SalesCommission {
+  id            String   @id @default(cuid())
+  amount        Decimal  @db.Decimal(10, 2)
+  status        String   @default("PENDING")
+  customerId    String
+  salespersonId String
+  tenantId      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  salesperson   User     @relation("EarnedCommissions", fields: [salespersonId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
